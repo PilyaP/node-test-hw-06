@@ -11,10 +11,11 @@ import { HttpError } from "../helpers/index.js";
 import { ctrlWrapper } from "../decorators/index.js";
 import path from "path";
 import resizeAvatar from "../middlewares/resizeAvatar.js";
+import sendMail from "../services/email/sendMail.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const { JWT_SECRET } = process.env;
+const { JWT_SECRET, BASE_URL } = process.env;
 
 const signup = async (req, res) => {
   const { email, password, subscription } = req.body;
@@ -122,6 +123,43 @@ const updateAvatar = async (req, res) => {
   });
 };
 
+const verifyEmail = async (req, res) => {
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  await User.findByIdAndUpdate(user._id, {
+    verificationToken: null,
+    verify: true,
+  });
+
+  res.json({ message: "Verification successful" });
+};
+
+const resendVerifyEmail = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+  if (user.verify) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+
+  const mail = {
+    to: email,
+    subject: "Email confirmation",
+    html: `<a target="_blank" href='${BASE_URL}/api/users/verify/${user.verificationToken}'>Hello! Please, click this link to confirm your email</a>`,
+  };
+
+  await sendMail(mail);
+
+  res.json({ message: "Verification email sent" });
+};
 export default {
   signup: ctrlWrapper(signup),
   signin: ctrlWrapper(signin),
@@ -129,4 +167,6 @@ export default {
   logout: ctrlWrapper(logout),
   updateSubscription: ctrlWrapper(updateSubscription),
   updateAvatar: ctrlWrapper(updateAvatar),
+  verifyEmail: ctrlWrapper(verifyEmail),
+  resendVerifyEmail: ctrlWrapper(resendVerifyEmail),
 };
