@@ -7,6 +7,7 @@ import authenticate from "../../middlewares/authenticate.js";
 import authSchema from "../../schemas/authSchema.js";
 import subscriptionSchema from "../../schemas/subscriptionSchema.js";
 import upload from "../../middlewares/upload.js";
+import resendVerifyEmailSchema from "../../schemas/resendVerifyEmailSchema.js";
 
 const authRouter = express.Router();
 
@@ -29,4 +30,13 @@ authRouter.patch(
   upload.single("avatar"),
   authController.updateAvatar
 );
+
+authRouter.get("/verify/:verificationToken", authController.verifyEmail);
+
+authRouter.post(
+  "/verify",
+  validateBody(resendVerifyEmailSchema),
+  authController.resendVerifyEmail
+);
+
 export default authRouter;

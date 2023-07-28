@@ -12,6 +12,7 @@ import { ctrlWrapper } from "../decorators/index.js";
 import path from "path";
 import resizeAvatar from "../middlewares/resizeAvatar.js";
 import sendMail from "../services/email/sendMail.js";
+import { nanoid } from "nanoid";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,14 +25,21 @@ const signup = async (req, res) => {
     throw HttpError(409, "Email in use");
   }
   const avatarURL = gravatar.url(email);
+  const verificationToken = nanoid();
   const hashPassword = await bcrypt.hash(password, 10);
   const newUser = await User.create({
     email,
     password: hashPassword,
     subscription,
     avatarURL,
+    verificationToken,
   });
-
+  const mail = {
+    to: email,
+    subject: "Email confirmation",
+    html: `<a target="_blank" href='${BASE_URL}/users/verify/${verificationToken}'>Hello! Please, click this link to confirm your email</a>`,
+  };
+  await sendMail(mail);
   res.status(201).json({
     user: {
       email: newUser.email,
@@ -68,12 +76,9 @@ const signin = async (req, res) => {
 };
 
 const getCurrent = async (req, res) => {
-  const { name, email } = req.user;
+  const { email, subscription } = req.user;
 
-  res.json({
-    name,
-    email,
-  });
+  res.json({ email, subscription });
 };
 
 const logout = async (req, res) => {
@@ -144,21 +149,28 @@ const resendVerifyEmail = async (req, res) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw HttpError(404, "User not found");
+    return res.status(404).json({ message: "User not found" });
   }
+
   if (user.verify) {
-    throw HttpError(400, "Verification has already been passed");
+    return res
+      .status(400)
+      .json({ message: "Verification has already been passed" });
   }
+
+  const verificationToken = nanoid();
+  user.verificationToken = verificationToken;
+  await user.save();
 
   const mail = {
     to: email,
     subject: "Email confirmation",
-    html: `<a target="_blank" href='${BASE_URL}/api/users/verify/${user.verificationToken}'>Hello! Please, click this link to confirm your email</a>`,
+    html: `<a target="_blank" href='${BASE_URL}/users/verify/${verificationToken}'>Hello! Please, click this link to confirm your email</a>`,
   };
 
   await sendMail(mail);
 
-  res.json({ message: "Verification email sent" });
+  res.status(200).json({ message: "Verification email sent" });
 };
 export default {
   signup: ctrlWrapper(signup),
@@ -170,3 +182,4 @@ export default {
   verifyEmail: ctrlWrapper(verifyEmail),
   resendVerifyEmail: ctrlWrapper(resendVerifyEmail),
 };
+// SG.zByBliCPQLicQkcIr9ZyIg.zIJZCjH2rSQmsabkJLdjvFNiGGkip - pEUzQ9SjX94b4;
