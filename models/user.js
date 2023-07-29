@@ -1,7 +1,8 @@
 import { Schema, model } from "mongoose";
 
-import { handleSaveError, allowUpdateValidate } from "./hooks/index.js";
 import { emailRegexp } from "../constants/user-constants.js";
+
+import handleMongooseError from "./handleUpdateValidate.js";
 
 const userSchema = new Schema(
   {
@@ -38,11 +39,9 @@ const userSchema = new Schema(
   { versionKey: false, timestamps: true }
 );
 
-userSchema.pre("findOneAndUpdate", allowUpdateValidate);
+// userSchema.pre("findOneAndUpdate", handleUpdateValidate);
 
-userSchema.post("save", handleSaveError);
-
-userSchema.post("findOneAndUpdate", handleSaveError);
+userSchema.post("save", handleMongooseError);
 
 const User = model("user", userSchema);
 
