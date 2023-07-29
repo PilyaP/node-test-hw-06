@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
-import handleUpdateValidate from "./handleUpdateValidate.js";
-import handleSaveError from "./handleSaveError.js";
+
+import handleMongooseError from "./handleMongooseError.js";
 
 const contactSchema = new Schema(
   {
@@ -21,14 +21,8 @@ const contactSchema = new Schema(
   },
   { versionKey: false, timestamps: true }
 );
-contactSchema.pre("findOneAndUpdate", handleUpdateValidate);
-
-contactSchema.post("save", handleSaveError);
-
-contactSchema.post("findOneAndUpdate", handleSaveError);
+contactSchema.post("save", handleMongooseError);
 
 const Contact = model("contact", contactSchema);
-// category => categories
-// mouse => mice
 
 export default Contact;

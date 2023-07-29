@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 import { emailRegexp } from "../constants/user-constants.js";
 
-import handleMongooseError from "./handleUpdateValidate.js";
+import handleMongooseError from "./handleMongooseError.js";
 
 const userSchema = new Schema(
   {
@@ -38,8 +38,6 @@ const userSchema = new Schema(
   },
   { versionKey: false, timestamps: true }
 );
-
-// userSchema.pre("findOneAndUpdate", handleUpdateValidate);
 
 userSchema.post("save", handleMongooseError);
 
